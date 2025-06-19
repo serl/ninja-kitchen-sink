@@ -1,0 +1,86 @@
+[project]
+name = "ninja-kitchen-sink"
+version = "0.1.0"
+description = "Explore the capabilities of Django Ninja with a comprehensive example project."
+readme = "README.md"
+authors = [
+  { name = "Sergio LIVI", email = "sergio@foodles.co" },
+]
+requires-python = "==3.12.*"
+dependencies = [
+  "django==5.2.*",
+  "django-ninja==1.4.3",
+]
+
+[dependency-groups]
+dev = [
+  "django-upgrade==1.25.0",
+  "pytest==8.4.1",
+  "pytest-cov==6.2.1",
+  "pytest-django==4.11.1",
+  "pytest-github-actions-annotate-failures==0.3.0",
+  "ruff==0.12.0",
+]
+
+[project.scripts]
+django = "ninja_kitchen_sink:main"
+django-admin = "ninja_kitchen_sink:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[tool.ruff]
+fix = true
+
+[tool.ruff.lint]
+select = [
+  "F", # pyflakes
+  "W", # pycodestyle
+  "E", # pycodestyle
+  "I", # isort
+  "UP", # pyupgrade
+  "B", # flake8-bugbear
+  "C4", # flake8-comprehensions
+  "T10", # flake8-debugger
+  "EXE", # flake8-executable
+  "ISC", # flake8-implicit-str-concat
+  "ICN", # flake8-import-conventions
+  "INP", # flake8-no-pep420
+  "PIE", # flake8-pie
+  "T20", # flake8-print
+  "INT", # flake8-gettext
+  "PGH", # pygrep-hooks
+  "PLC", # pylint conventions
+  "PLE", # pylint errors
+  "PLW", # pylint warnings
+  "FLY", # flynt
+  "RUF", # ruff-specific rules
+]
+
+ignore = [
+  "E501", # ignore line length (let ruff format handle it)
+  "ISC001", # Conflicting rule with ruff formatter, see https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+]
+
+[tool.pytest.ini_options]
+addopts = '--ds=ninja_kitchen_sink.settings'
+FAIL_INVALID_TEMPLATE_VARS = true
+filterwarnings = [
+  'error', # Fail on warnings
+
+  # https://github.com/vitalik/django-ninja/issues/1245
+  'ignore:Support for class-based `config` is deprecated.*:pydantic.warnings.PydanticDeprecatedSince20',
+]
+
+
+[tool.coverage.run]
+branch = true
+source = [
+  "src",
+  "tests",
+]
+
+[tool.coverage.report]
+show_missing = true
