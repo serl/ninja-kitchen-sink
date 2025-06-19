@@ -1,0 +1,15 @@
+name: "Install"
+description: "Install dependencies and configure project"
+
+runs:
+  using: "composite"
+
+  steps:
+    - uses: astral-sh/setup-uv@a02a550bdd3185dba2ebb6aa98d77047ce54ad21 # 6.2.1
+      with:
+        version: "0.7.13" # update in .pre-commit-config.yaml well
+        enable-cache: true
+
+    - shell: bash
+      run: |
+        uv sync --all-extras --dev
