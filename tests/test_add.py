@@ -19,3 +19,16 @@ class AddTestCase(TestCase):
                 }
             ]
         }
+
+    def test_add_missing_parameter(self):
+        response = self.client.get("/api/add", {"a": 3})
+        assert response.status_code == 422
+        assert response.json() == {
+            "detail": [
+                {
+                    "loc": ["query", "b"],
+                    "msg": "Field required",
+                    "type": "missing",
+                }
+            ]
+        }
