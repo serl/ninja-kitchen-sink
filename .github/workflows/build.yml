@@ -1,0 +1,67 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit/
+          key: pre-commit-1|${{ hashFiles('uv.lock') }}|${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: pre-commit
+        run: |
+          SKIP=no-commit-to-branch \
+          uv tool run pre-commit run \
+            --all-files \
+            --show-diff-on-failure \
+            --color always
+
+  tests:
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install
+      - name: Run tests
+        id: tests
+        run: |
+          set -o pipefail
+          echo 'stdout<<EOF' > "$GITHUB_OUTPUT"
+          uv run pytest --cov 2>&1 | tee -a "$GITHUB_OUTPUT"
+          echo 'EOF' >> "$GITHUB_OUTPUT"
+
+      - name: Add PR Comment
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db # 2.9.2
+        with:
+          header: test_results
+          message: |
+            # Test results :white_check_mark:
+            ```
+            ${{ steps.tests.outputs.stdout }}
+            ```
+      - name: Remove PR Comment on failure
+        if: failure()
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db # 2.9.2
+        with:
+          header: test_results
+          delete: true

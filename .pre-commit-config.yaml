@@ -14,6 +14,8 @@ repos:
       - id: debug-statements
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: no-commit-to-branch
+        args: ["--branch", "main"]
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
@@ -27,7 +29,7 @@ repos:
       - id: taplo-lint
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.7.13
+    rev: 0.7.13 # update in .github/workflows as well
     hooks:
       - id: uv-lock
 
