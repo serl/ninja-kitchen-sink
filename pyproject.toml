@@ -61,6 +61,7 @@ select = [
 
 ignore = [
   "E501", # ignore line length (let ruff format handle it)
+  "RUF012",
   "ISC001", # Conflicting rule with ruff formatter, see https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
 ]
 

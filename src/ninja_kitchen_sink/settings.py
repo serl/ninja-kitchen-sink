@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "ninja_kitchen_sink.polls",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
