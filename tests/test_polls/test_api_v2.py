@@ -2,6 +2,7 @@ from datetime import datetime
 from unittest.mock import ANY
 from zoneinfo import ZoneInfo
 
+from django.contrib.auth.models import Permission, User
 from django.test import TestCase
 from parameterized import parameterized_class
 
@@ -19,6 +20,49 @@ class CreateQuestionTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.tag_1 = Tag.objects.create(name="Tag1")
+        cls.user = User.objects.create_user("testuser")
+        cls.user.user_permissions.add(
+            Permission.objects.get(codename="add_question"),
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_unauthenticated_create(self):
+        self.client.logout()
+        response = self.client.post(
+            f"/{self.base_api}/polls-v2/questions/",
+            {},
+            content_type="application/json",
+        )
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 401
+            assert response.json() == {"detail": "Unauthorized"}
+        else:
+            assert response.status_code == 403
+            assert response.json() == {
+                "detail": "Authentication credentials were not provided."
+            }
+
+    def test_unauthorized_create(self):
+        unauthorized_user = User.objects.create_user("unauthorized_user")
+        self.client.force_login(unauthorized_user)
+
+        response = self.client.post(
+            f"/{self.base_api}/polls-v2/questions/",
+            {},
+            content_type="application/json",
+        )
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 401
+            assert response.json() == {"detail": "Unauthorized"}
+        else:
+            assert response.status_code == 403
+            assert response.json() == {
+                "detail": "You do not have permission to perform this action."
+            }
 
     def test_create_success(self):
         response = self.client.post(
@@ -205,6 +249,25 @@ class ListQuestionTestCase(TestCase):
             choice_text="Choice 2",
             votes=3,
         )
+        cls.user = User.objects.create_user("testuser")
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_unauthenticated_list(self):
+        self.client.logout()
+        response = self.client.get(
+            f"/{self.base_api}/polls-v2/questions/",
+        )
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 401
+            assert response.json() == {"detail": "Unauthorized"}
+        else:
+            assert response.status_code == 403
+            assert response.json() == {
+                "detail": "Authentication credentials were not provided."
+            }
 
     def test_list_questions(self):
         response = self.client.get(
@@ -255,6 +318,25 @@ class GetQuestionTestCase(TestCase):
             pub_date=datetime(2025, 1, 1, 12, 0, 0, tzinfo=ZoneInfo("UTC")),
         )
         cls.question.tags.set([cls.tag_1])
+        cls.user = User.objects.create_user("testuser")
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_unauthenticated_get(self):
+        self.client.logout()
+        response = self.client.get(
+            f"/{self.base_api}/polls-v2/questions/{self.question.id}/",
+        )
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 401
+            assert response.json() == {"detail": "Unauthorized"}
+        else:
+            assert response.status_code == 403
+            assert response.json() == {
+                "detail": "Authentication credentials were not provided."
+            }
 
     def test_get_question(self):
         response = self.client.get(
@@ -309,6 +391,49 @@ class UpdateQuestionTestCase(TestCase):
             choice_text="Choice 2",
             votes=3,
         )
+        cls.user = User.objects.create_user("testuser")
+        cls.user.user_permissions.add(
+            Permission.objects.get(codename="change_question"),
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_unauthenticated_update(self):
+        self.client.logout()
+        response = self.client.put(
+            f"/{self.base_api}/polls-v2/questions/{self.question.id}/",
+            {},
+            content_type="application/json",
+        )
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 401
+            assert response.json() == {"detail": "Unauthorized"}
+        else:
+            assert response.status_code == 403
+            assert response.json() == {
+                "detail": "Authentication credentials were not provided."
+            }
+
+    def test_unauthorized_update(self):
+        unauthorized_user = User.objects.create_user("unauthorized_user")
+        self.client.force_login(unauthorized_user)
+
+        response = self.client.put(
+            f"/{self.base_api}/polls-v2/questions/{self.question.id}/",
+            {},
+            content_type="application/json",
+        )
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 401
+            assert response.json() == {"detail": "Unauthorized"}
+        else:
+            assert response.status_code == 403
+            assert response.json() == {
+                "detail": "You do not have permission to perform this action."
+            }
 
     def test_update_question(self):
         response = self.client.put(
@@ -450,6 +575,49 @@ class PartialUpdateQuestionTestCase(TestCase):
             choice_text="Choice 2",
             votes=3,
         )
+        cls.user = User.objects.create_user("testuser")
+        cls.user.user_permissions.add(
+            Permission.objects.get(codename="change_question"),
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_unauthenticated_partial_update(self):
+        self.client.logout()
+        response = self.client.patch(
+            f"/{self.base_api}/polls-v2/questions/{self.question.id}/",
+            {},
+            content_type="application/json",
+        )
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 401
+            assert response.json() == {"detail": "Unauthorized"}
+        else:
+            assert response.status_code == 403
+            assert response.json() == {
+                "detail": "Authentication credentials were not provided."
+            }
+
+    def test_unauthorized_partial_update(self):
+        unauthorized_user = User.objects.create_user("unauthorized_user")
+        self.client.force_login(unauthorized_user)
+
+        response = self.client.patch(
+            f"/{self.base_api}/polls-v2/questions/{self.question.id}/",
+            {},
+            content_type="application/json",
+        )
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 401
+            assert response.json() == {"detail": "Unauthorized"}
+        else:
+            assert response.status_code == 403
+            assert response.json() == {
+                "detail": "You do not have permission to perform this action."
+            }
 
     def test_partial_update_question(self):
         response = self.client.patch(
@@ -625,6 +793,45 @@ class DeleteQuestionTestCase(TestCase):
             choice_text="Choice 2",
             votes=3,
         )
+        cls.user = User.objects.create_user("testuser")
+        cls.user.user_permissions.add(
+            Permission.objects.get(codename="delete_question"),
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_unauthenticated_delete(self):
+        self.client.logout()
+        response = self.client.delete(
+            f"/{self.base_api}/polls-v2/questions/{self.question.id}/",
+        )
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 401
+            assert response.json() == {"detail": "Unauthorized"}
+        else:
+            assert response.status_code == 403
+            assert response.json() == {
+                "detail": "Authentication credentials were not provided."
+            }
+
+    def test_unauthorized_delete(self):
+        unauthorized_user = User.objects.create_user("unauthorized_user")
+        self.client.force_login(unauthorized_user)
+
+        response = self.client.delete(
+            f"/{self.base_api}/polls-v2/questions/{self.question.id}/",
+        )
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 401
+            assert response.json() == {"detail": "Unauthorized"}
+        else:
+            assert response.status_code == 403
+            assert response.json() == {
+                "detail": "You do not have permission to perform this action."
+            }
 
     def test_delete_question(self):
         response = self.client.delete(

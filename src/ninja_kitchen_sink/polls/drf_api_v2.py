@@ -1,4 +1,5 @@
 from rest_framework import routers, serializers, viewsets
+from rest_framework.permissions import DjangoModelPermissions
 
 from .models import Choice, Question
 
@@ -38,6 +39,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
+    permission_classes = [DjangoModelPermissions]
 
 
 router.register("questions", QuestionViewSet)

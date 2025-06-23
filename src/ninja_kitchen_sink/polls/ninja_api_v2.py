@@ -1,6 +1,10 @@
+from typing import Any
+
+from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from ninja import ModelSchema, PatchDict, Router
 from ninja.errors import ValidationError
+from ninja.security import SessionAuth
 
 from .models import Choice, Question, Tag
 
@@ -46,7 +50,23 @@ class QuestionOut(ModelSchema):
         ]
 
 
-@router.post("/questions/", response={201: QuestionOut})
+class HasDjangoPermission(SessionAuth):
+    def __init__(self, permission: str):
+        self.permission = permission
+        super().__init__()
+
+    def authenticate(self, request: HttpRequest, key: str | None) -> Any | None:
+        if user := super().authenticate(request, key):
+            if user.has_perm(self.permission):
+                return user
+        return None
+
+
+@router.post(
+    "/questions/",
+    response={201: QuestionOut},
+    auth=HasDjangoPermission("polls.add_question"),
+)
 def create_question(request, payload: QuestionIn):
     data = payload.dict()
     choices_data = data.pop("choices", [])
@@ -64,18 +84,30 @@ def create_question(request, payload: QuestionIn):
     return 201, question
 
 
-@router.get("/questions/", response=list[QuestionOut])
+@router.get(
+    "/questions/",
+    response=list[QuestionOut],
+    auth=SessionAuth(),
+)
 def list_questions(request):
     return Question.objects.all()
 
 
-@router.get("/questions/{question_id}/", response=QuestionOut)
+@router.get(
+    "/questions/{question_id}/",
+    response=QuestionOut,
+    auth=SessionAuth(),
+)
 def get_question(request, question_id: int):
     question = get_object_or_404(Question, id=question_id)
     return question
 
 
-@router.put("/questions/{question_id}/", response=QuestionOut)
+@router.put(
+    "/questions/{question_id}/",
+    response=QuestionOut,
+    auth=HasDjangoPermission("polls.change_question"),
+)
 def update_question(request, question_id: int, payload: QuestionIn):
     question = get_object_or_404(Question, id=question_id)
     data = payload.dict()
@@ -98,7 +130,11 @@ def update_question(request, question_id: int, payload: QuestionIn):
     return question
 
 
-@router.patch("/questions/{question_id}/", response=QuestionOut)
+@router.patch(
+    "/questions/{question_id}/",
+    response=QuestionOut,
+    auth=HasDjangoPermission("polls.change_question"),
+)
 def partial_update_question(request, question_id: int, payload: PatchDict[QuestionIn]):
     question = get_object_or_404(Question, id=question_id)
     payload.pop("choices", None)  # Choices are not allowed in PATCH
@@ -120,7 +156,11 @@ def partial_update_question(request, question_id: int, payload: PatchDict[Questi
     return question
 
 
-@router.delete("/questions/{question_id}/", response={204: None})
+@router.delete(
+    "/questions/{question_id}/",
+    response={204: None},
+    auth=HasDjangoPermission("polls.delete_question"),
+)
 def delete_question(request, question_id: int):
     question = get_object_or_404(Question, id=question_id)
     question.delete()
