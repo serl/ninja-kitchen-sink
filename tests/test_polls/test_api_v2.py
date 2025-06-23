@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from django.test import TestCase
 from parameterized import parameterized_class
 
-from ninja_kitchen_sink.polls.models import Question, Tag
+from ninja_kitchen_sink.polls.models import Choice, Question, Tag
 
 
 @parameterized_class(
@@ -27,6 +27,15 @@ class CreateQuestionTestCase(TestCase):
                 "question_text": "Second question?",
                 "pub_date": "2025-01-01T12:00:00Z",
                 "tags": [self.tag_1.id],
+                "choices": [
+                    {
+                        "choice_text": "Choice 1",
+                    },
+                    {
+                        "choice_text": "Choice 2",
+                        "votes": 123,  # Ignored
+                    },
+                ],
             },
             content_type="application/json",
         )
@@ -36,6 +45,46 @@ class CreateQuestionTestCase(TestCase):
             "question_text": "Second question?",
             "pub_date": "2025-01-01T12:00:00Z",
             "tags": [self.tag_1.id],
+            "choices": [
+                {
+                    "id": ANY,
+                    "choice_text": "Choice 1",
+                    "votes": 0,
+                },
+                {
+                    "id": ANY,
+                    "choice_text": "Choice 2",
+                    "votes": 0,
+                },
+            ],
+        }
+
+        new_question_id = response.json()["id"]
+        new_question = Question.objects.get(id=new_question_id)
+        assert new_question.question_text == "Second question?"
+        assert new_question.pub_date == datetime(
+            2025, 1, 1, 12, 0, 0, tzinfo=ZoneInfo("UTC")
+        )
+        assert list(new_question.tags.all()) == [self.tag_1]
+
+    def test_create_without_choices_success(self):
+        response = self.client.post(
+            f"/{self.base_api}/polls-v2/questions/",
+            {
+                "question_text": "Second question?",
+                "pub_date": "2025-01-01T12:00:00Z",
+                "tags": [self.tag_1.id],
+                "choices": [],
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 201
+        assert response.json() == {
+            "id": ANY,
+            "question_text": "Second question?",
+            "pub_date": "2025-01-01T12:00:00Z",
+            "tags": [self.tag_1.id],
+            "choices": [],
         }
 
         new_question_id = response.json()["id"]
@@ -147,6 +196,15 @@ class ListQuestionTestCase(TestCase):
             question_text="Second question?",
             pub_date=datetime(2025, 2, 1, 12, 0, 0, tzinfo=ZoneInfo("UTC")),
         )
+        Choice.objects.create(
+            question=cls.question_2,
+            choice_text="Choice 1",
+        )
+        Choice.objects.create(
+            question=cls.question_2,
+            choice_text="Choice 2",
+            votes=3,
+        )
 
     def test_list_questions(self):
         response = self.client.get(
@@ -159,12 +217,25 @@ class ListQuestionTestCase(TestCase):
             "question_text": "First question?",
             "pub_date": "2025-01-01T12:00:00Z",
             "tags": [self.tag_1.id],
+            "choices": [],
         }
         assert response.json()[1] == {
             "id": self.question_2.id,
             "question_text": "Second question?",
             "pub_date": "2025-02-01T12:00:00Z",
             "tags": [],
+            "choices": [
+                {
+                    "id": ANY,
+                    "choice_text": "Choice 1",
+                    "votes": 0,
+                },
+                {
+                    "id": ANY,
+                    "choice_text": "Choice 2",
+                    "votes": 3,
+                },
+            ],
         }
 
 
@@ -195,6 +266,7 @@ class GetQuestionTestCase(TestCase):
             "question_text": "First question?",
             "pub_date": "2025-01-01T12:00:00Z",
             "tags": [self.tag_1.id],
+            "choices": [],
         }
 
     def test_get_nonexistent_question(self):
@@ -228,6 +300,16 @@ class UpdateQuestionTestCase(TestCase):
         )
         cls.question.tags.set([cls.tag_1])
 
+        Choice.objects.create(
+            question=cls.question,
+            choice_text="Choice 1",
+        )
+        Choice.objects.create(
+            question=cls.question,
+            choice_text="Choice 2",
+            votes=3,
+        )
+
     def test_update_question(self):
         response = self.client.put(
             f"/{self.base_api}/polls-v2/questions/{self.question.id}/",
@@ -235,6 +317,14 @@ class UpdateQuestionTestCase(TestCase):
                 "question_text": "Updated question?",
                 "pub_date": "2025-02-01T12:00:00Z",
                 "tags": [self.tag_2.id],
+                "choices": [
+                    {
+                        "choice_text": "Choice 3",
+                    },
+                    {
+                        "choice_text": "Choice 4",
+                    },
+                ],
             },
             content_type="application/json",
         )
@@ -244,6 +334,18 @@ class UpdateQuestionTestCase(TestCase):
             "question_text": "Updated question?",
             "pub_date": "2025-02-01T12:00:00Z",
             "tags": [self.tag_2.id],
+            "choices": [
+                {
+                    "id": ANY,
+                    "choice_text": "Choice 3",
+                    "votes": 0,
+                },
+                {
+                    "id": ANY,
+                    "choice_text": "Choice 4",
+                    "votes": 0,
+                },
+            ],
         }
 
         updated_question = Question.objects.get(id=self.question.id)
@@ -339,6 +441,16 @@ class PartialUpdateQuestionTestCase(TestCase):
         )
         cls.question.tags.set([cls.tag_1])
 
+        Choice.objects.create(
+            question=cls.question,
+            choice_text="Choice 1",
+        )
+        Choice.objects.create(
+            question=cls.question,
+            choice_text="Choice 2",
+            votes=3,
+        )
+
     def test_partial_update_question(self):
         response = self.client.patch(
             f"/{self.base_api}/polls-v2/questions/{self.question.id}/",
@@ -353,6 +465,18 @@ class PartialUpdateQuestionTestCase(TestCase):
             "question_text": "Partially updated question?",
             "pub_date": "2025-01-01T12:00:00Z",
             "tags": [self.tag_1.id],
+            "choices": [
+                {
+                    "id": ANY,
+                    "choice_text": "Choice 1",
+                    "votes": 0,
+                },
+                {
+                    "id": ANY,
+                    "choice_text": "Choice 2",
+                    "votes": 3,
+                },
+            ],
         }
 
         updated_question = Question.objects.get(id=self.question.id)
@@ -396,6 +520,48 @@ class PartialUpdateQuestionTestCase(TestCase):
             2025, 1, 1, 12, 0, 0, tzinfo=ZoneInfo("UTC")
         )
         assert list(updated_question.tags.all()) == [self.tag_2]
+
+    def test_ignore_choices_on_partial_update(self):
+        response = self.client.patch(
+            f"/{self.base_api}/polls-v2/questions/{self.question.id}/",
+            {
+                "choices": [
+                    {
+                        "choice_text": "Choice 3",
+                    },
+                    {
+                        "choice_text": "Choice 4",
+                    },
+                ],
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        assert response.json() == {
+            "id": self.question.id,
+            "question_text": "First question?",
+            "pub_date": "2025-01-01T12:00:00Z",
+            "tags": [self.tag_1.id],
+            "choices": [
+                {
+                    "id": ANY,
+                    "choice_text": "Choice 1",
+                    "votes": 0,
+                },
+                {
+                    "id": ANY,
+                    "choice_text": "Choice 2",
+                    "votes": 3,
+                },
+            ],
+        }
+
+        updated_question = Question.objects.get(id=self.question.id)
+        assert updated_question.question_text == "First question?"
+        assert updated_question.pub_date == datetime(
+            2025, 1, 1, 12, 0, 0, tzinfo=ZoneInfo("UTC")
+        )
+        assert list(updated_question.tags.all()) == [self.tag_1]
 
     def test_update_nonexistent_question(self):
         response = self.client.patch(
@@ -450,6 +616,15 @@ class DeleteQuestionTestCase(TestCase):
             question_text="First question?",
             pub_date=datetime(2025, 1, 1, 12, 0, 0, tzinfo=ZoneInfo("UTC")),
         )
+        Choice.objects.create(
+            question=cls.question,
+            choice_text="Choice 1",
+        )
+        Choice.objects.create(
+            question=cls.question,
+            choice_text="Choice 2",
+            votes=3,
+        )
 
     def test_delete_question(self):
         response = self.client.delete(
@@ -459,6 +634,9 @@ class DeleteQuestionTestCase(TestCase):
 
         with self.assertRaises(Question.DoesNotExist):
             Question.objects.get(id=self.question.id)
+
+        assert Question.objects.count() == 0
+        assert Choice.objects.count() == 0
 
     def test_delete_nonexistent_question(self):
         response = self.client.delete(
