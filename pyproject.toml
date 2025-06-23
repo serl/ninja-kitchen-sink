@@ -10,11 +10,13 @@ requires-python = "==3.12.*"
 dependencies = [
   "django==5.2.*",
   "django-ninja==1.4.3",
+  "djangorestframework==3.16.0",
 ]
 
 [dependency-groups]
 dev = [
   "django-upgrade==1.25.0",
+  "parameterized==0.9.0",
   "pytest==8.4.1",
   "pytest-cov==6.2.1",
   "pytest-django==4.11.1",
@@ -61,6 +63,7 @@ select = [
 
 ignore = [
   "E501", # ignore line length (let ruff format handle it)
+  "RUF012",
   "ISC001", # Conflicting rule with ruff formatter, see https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
 ]
 
@@ -72,6 +75,7 @@ filterwarnings = [
 
   # https://github.com/vitalik/django-ninja/issues/1245
   'ignore:Support for class-based `config` is deprecated.*:pydantic.warnings.PydanticDeprecatedSince20',
+  'ignore:The `__fields__` attribute is deprecated, use `model_fields` instead.*:pydantic.warnings.PydanticDeprecatedSince20',
 ]
 
 
@@ -84,3 +88,8 @@ source = [
 
 [tool.coverage.report]
 show_missing = true
+
+[tool.codespell]
+ignore-words-list = [
+  "QuestionIn",
+]
