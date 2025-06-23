@@ -2,6 +2,8 @@
 
 > Where the Ninjas wash their dishes.
 
+This project aims to provide some comparison between [Django Ninja](https://django-ninja.dev/) and [Django Rest Framework](https://www.django-rest-framework.org/).
+
 ## Dev environment
 
 You'll need [Direnv](https://direnv.net/) and [Uv](https://docs.astral.sh/uv/getting-started/installation/).

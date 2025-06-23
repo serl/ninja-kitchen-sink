@@ -3,14 +3,22 @@ from unittest.mock import ANY
 from zoneinfo import ZoneInfo
 
 from django.test import TestCase
+from parameterized import parameterized_class
 
 from ninja_kitchen_sink.polls.models import Question
 
 
+@parameterized_class(
+    ("base_api",),
+    [
+        ("ninja-api",),
+        ("drf-api",),
+    ],
+)
 class CreateQuestionTestCase(TestCase):
     def test_create_success(self):
         response = self.client.post(
-            "/api/polls/questions",
+            f"/{self.base_api}/polls/questions/",
             {
                 "question_text": "Second question?",
                 "pub_date": "2025-01-01T12:00:00Z",
@@ -33,45 +41,68 @@ class CreateQuestionTestCase(TestCase):
 
     def test_missing_fields(self):
         response = self.client.post(
-            "/api/polls/questions",
+            f"/{self.base_api}/polls/questions/",
             {
                 "question_text": "Third question?",
             },
             content_type="application/json",
         )
-        assert response.status_code == 422
-        assert response.json() == {
-            "detail": [
-                {
-                    "loc": ["body", "payload", "pub_date"],
-                    "msg": "Field required",
-                    "type": "missing",
-                }
-            ]
-        }
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 422
+            assert response.json() == {
+                "detail": [
+                    {
+                        "loc": ["body", "payload", "pub_date"],
+                        "msg": "Field required",
+                        "type": "missing",
+                    }
+                ]
+            }
+        else:
+            assert response.status_code == 400
+            assert response.json() == {
+                "pub_date": ["This field is required."],
+            }
 
     def test_invalid_date_format(self):
         response = self.client.post(
-            "/api/polls/questions",
+            f"/{self.base_api}/polls/questions/",
             {
                 "question_text": "Fourth question?",
                 "pub_date": "invalid-date-format",
             },
             content_type="application/json",
         )
-        assert response.status_code == 422
-        assert response.json() == {
-            "detail": [
-                {
-                    "ctx": {"error": "invalid character in year"},
-                    "loc": ["body", "payload", "pub_date"],
-                    "msg": "Input should be a valid datetime or date, invalid character in year",
-                    "type": "datetime_from_date_parsing",
-                }
-            ]
-        }
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 422
+            assert response.json() == {
+                "detail": [
+                    {
+                        "ctx": {"error": "invalid character in year"},
+                        "loc": ["body", "payload", "pub_date"],
+                        "msg": "Input should be a valid datetime or date, invalid character in year",
+                        "type": "datetime_from_date_parsing",
+                    }
+                ]
+            }
+        else:
+            assert response.status_code == 400
+            assert response.json() == {
+                "pub_date": [
+                    "Datetime has wrong format. Use one of these formats instead: YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z]."
+                ]
+            }
 
 
+@parameterized_class(
+    ("base_api",),
+    [
+        ("ninja-api",),
+        ("drf-api",),
+    ],
+)
 class ListQuestionTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -81,7 +112,9 @@ class ListQuestionTestCase(TestCase):
         )
 
     def test_list_questions(self):
-        response = self.client.get("/api/polls/questions")
+        response = self.client.get(
+            f"/{self.base_api}/polls/questions/",
+        )
         assert response.status_code == 200
         assert len(response.json()) == 1
         assert response.json()[0] == {
@@ -91,6 +124,13 @@ class ListQuestionTestCase(TestCase):
         }
 
 
+@parameterized_class(
+    ("base_api",),
+    [
+        ("ninja-api",),
+        ("drf-api",),
+    ],
+)
 class GetQuestionTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -100,7 +140,9 @@ class GetQuestionTestCase(TestCase):
         )
 
     def test_get_question(self):
-        response = self.client.get(f"/api/polls/questions/{self.question.id}")
+        response = self.client.get(
+            f"/{self.base_api}/polls/questions/{self.question.id}/",
+        )
         assert response.status_code == 200
         assert response.json() == {
             "id": self.question.id,
@@ -109,11 +151,25 @@ class GetQuestionTestCase(TestCase):
         }
 
     def test_get_nonexistent_question(self):
-        response = self.client.get(f"/api/polls/questions/{self.question.id + 1}")
+        response = self.client.get(
+            f"/{self.base_api}/polls/questions/{self.question.id + 1}/",
+        )
+
         assert response.status_code == 404
-        assert response.json() == {"detail": "Not Found"}
+
+        if self.base_api == "ninja-api":
+            assert response.json() == {"detail": "Not Found"}
+        else:
+            assert response.json() == {"detail": "No Question matches the given query."}
 
 
+@parameterized_class(
+    ("base_api",),
+    [
+        ("ninja-api",),
+        ("drf-api",),
+    ],
+)
 class UpdateQuestionTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -124,7 +180,7 @@ class UpdateQuestionTestCase(TestCase):
 
     def test_update_question(self):
         response = self.client.put(
-            f"/api/polls/questions/{self.question.id}",
+            f"/{self.base_api}/polls/questions/{self.question.id}/",
             {
                 "question_text": "Updated question?",
                 "pub_date": "2025-02-01T12:00:00Z",
@@ -146,36 +202,55 @@ class UpdateQuestionTestCase(TestCase):
 
     def test_update_missing_fields(self):
         response = self.client.put(
-            f"/api/polls/questions/{self.question.id}",
+            f"/{self.base_api}/polls/questions/{self.question.id}/",
             {
                 "question_text": "Updated question?",
             },
             content_type="application/json",
         )
-        assert response.status_code == 422
-        assert response.json() == {
-            "detail": [
-                {
-                    "loc": ["body", "payload", "pub_date"],
-                    "msg": "Field required",
-                    "type": "missing",
-                }
-            ]
-        }
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 422
+            assert response.json() == {
+                "detail": [
+                    {
+                        "loc": ["body", "payload", "pub_date"],
+                        "msg": "Field required",
+                        "type": "missing",
+                    }
+                ]
+            }
+        else:
+            assert response.status_code == 400
+            assert response.json() == {
+                "pub_date": ["This field is required."],
+            }
 
     def test_update_nonexistent_question(self):
         response = self.client.put(
-            f"/api/polls/questions/{self.question.id + 1}",
+            f"/{self.base_api}/polls/questions/{self.question.id + 1}/",
             {
                 "question_text": "Nonexistent question?",
                 "pub_date": "2025-02-01T12:00:00Z",
             },
             content_type="application/json",
         )
+
         assert response.status_code == 404
-        assert response.json() == {"detail": "Not Found"}
+
+        if self.base_api == "ninja-api":
+            assert response.json() == {"detail": "Not Found"}
+        else:
+            assert response.json() == {"detail": "No Question matches the given query."}
 
 
+@parameterized_class(
+    ("base_api",),
+    [
+        ("ninja-api",),
+        ("drf-api",),
+    ],
+)
 class PartialUpdateQuestionTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -186,7 +261,7 @@ class PartialUpdateQuestionTestCase(TestCase):
 
     def test_partial_update_question(self):
         response = self.client.patch(
-            f"/api/polls/questions/{self.question.id}",
+            f"/{self.base_api}/polls/questions/{self.question.id}/",
             {
                 "question_text": "Partially updated question?",
             },
@@ -207,16 +282,28 @@ class PartialUpdateQuestionTestCase(TestCase):
 
     def test_update_nonexistent_question(self):
         response = self.client.patch(
-            f"/api/polls/questions/{self.question.id + 1}",
+            f"/{self.base_api}/polls/questions/{self.question.id + 1}/",
             {
                 "question_text": "Nonexistent question?",
             },
             content_type="application/json",
         )
+
         assert response.status_code == 404
-        assert response.json() == {"detail": "Not Found"}
+
+        if self.base_api == "ninja-api":
+            assert response.json() == {"detail": "Not Found"}
+        else:
+            assert response.json() == {"detail": "No Question matches the given query."}
 
 
+@parameterized_class(
+    ("base_api",),
+    [
+        ("ninja-api",),
+        ("drf-api",),
+    ],
+)
 class DeleteQuestionTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -226,13 +313,22 @@ class DeleteQuestionTestCase(TestCase):
         )
 
     def test_delete_question(self):
-        response = self.client.delete(f"/api/polls/questions/{self.question.id}")
+        response = self.client.delete(
+            f"/{self.base_api}/polls/questions/{self.question.id}/",
+        )
         assert response.status_code == 204
 
         with self.assertRaises(Question.DoesNotExist):
             Question.objects.get(id=self.question.id)
 
     def test_delete_nonexistent_question(self):
-        response = self.client.delete(f"/api/polls/questions/{self.question.id + 1}")
+        response = self.client.delete(
+            f"/{self.base_api}/polls/questions/{self.question.id + 1}/",
+        )
+
         assert response.status_code == 404
-        assert response.json() == {"detail": "Not Found"}
+
+        if self.base_api == "ninja-api":
+            assert response.json() == {"detail": "Not Found"}
+        else:
+            assert response.json() == {"detail": "No Question matches the given query."}
