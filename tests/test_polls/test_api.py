@@ -332,3 +332,90 @@ class DeleteQuestionTestCase(TestCase):
             assert response.json() == {"detail": "Not Found"}
         else:
             assert response.json() == {"detail": "No Question matches the given query."}
+
+
+@parameterized_class(
+    ("base_api",),
+    [
+        ("ninja-api",),
+        ("drf-api",),
+    ],
+)
+class AddChoiceTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.question = Question.objects.create(
+            question_text="First question?",
+            pub_date=datetime(2025, 1, 1, 12, 0, 0, tzinfo=ZoneInfo("UTC")),
+        )
+
+    def test_add_choice(self):
+        response = self.client.post(
+            f"/{self.base_api}/polls/questions/{self.question.id}/choices/",
+            {
+                "choice_text": "Choice A",
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 201
+        assert response.json() == {
+            "id": ANY,
+            "choice_text": "Choice A",
+            "votes": 0,
+        }
+
+    def test_ignore_votes_on_create(self):
+        response = self.client.post(
+            f"/{self.base_api}/polls/questions/{self.question.id}/choices/",
+            {
+                "choice_text": "Choice A",
+                "votes": 10,
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 201
+        assert response.json() == {
+            "id": ANY,
+            "choice_text": "Choice A",
+            "votes": 0,
+        }
+
+    def test_missing_choice_text(self):
+        response = self.client.post(
+            f"/{self.base_api}/polls/questions/{self.question.id}/choices/",
+            {},
+            content_type="application/json",
+        )
+
+        if self.base_api == "ninja-api":
+            assert response.status_code == 422
+            assert response.json() == {
+                "detail": [
+                    {
+                        "loc": ["body", "payload", "choice_text"],
+                        "msg": "Field required",
+                        "type": "missing",
+                    }
+                ]
+            }
+        else:
+            assert response.status_code == 400
+            assert response.json() == {
+                "choice_text": ["This field is required."],
+            }
+
+    def test_add_choice_to_nonexistent_question(self):
+        response = self.client.post(
+            f"/{self.base_api}/polls/questions/{self.question.id + 1}/choices/",
+            {
+                "choice_text": "Choice B",
+            },
+            content_type="application/json",
+        )
+
+        assert response.status_code == 404
+
+        if self.base_api == "ninja-api":
+            assert response.json() == {"detail": "Not Found"}
+        else:
+            assert response.json() == {"detail": "No Question matches the given query."}

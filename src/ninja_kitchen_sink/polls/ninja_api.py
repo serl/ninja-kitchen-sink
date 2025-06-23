@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from ninja import ModelSchema, PatchDict, Router
 
-from .models import Question
+from .models import Choice, Question
 
 router = Router()
 
@@ -66,3 +66,32 @@ def delete_question(request, question_id: int):
     question = get_object_or_404(Question, id=question_id)
     question.delete()
     return 204, None
+
+
+class ChoiceIn(ModelSchema):
+    class Meta:
+        model = Choice
+        fields = ["choice_text"]
+
+
+class ChoiceOut(ModelSchema):
+    class Meta:
+        model = Choice
+        fields = ["id", "choice_text", "votes"]
+
+
+@router.post(
+    "/questions/{question_id}/choices/",
+    response={201: ChoiceOut},
+)
+def create_choice(
+    request,
+    question_id: int,
+    payload: ChoiceIn,
+):
+    question = get_object_or_404(Question, id=question_id)
+    choice = Choice.objects.create(
+        question=question,
+        **payload.dict(),
+    )
+    return 201, choice
