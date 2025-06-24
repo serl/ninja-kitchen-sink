@@ -12,6 +12,7 @@ def add(request, a: int, b: int):
 
 api.add_router("/polls/", "ninja_kitchen_sink.polls.ninja_api.router")
 api.add_router("/polls-v2/", "ninja_kitchen_sink.polls.ninja_api_v2.router")
+api.add_router("/polls-async/", "ninja_kitchen_sink.polls.ninja_async_api.router")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
