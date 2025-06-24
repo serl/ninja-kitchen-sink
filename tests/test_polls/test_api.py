@@ -163,6 +163,35 @@ class GetQuestionTestCase(TestCase):
             assert response.json() == {"detail": "No Question matches the given query."}
 
 
+class AsyncGetQuestionTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.question = Question.objects.create(
+            question_text="First question?",
+            pub_date=datetime(2025, 1, 1, 12, 0, 0, tzinfo=ZoneInfo("UTC")),
+        )
+
+    def test_get_question(self):
+        response = self.client.get(
+            f"/ninja-api/polls-async/questions/{self.question.id}/",
+        )
+        assert response.status_code == 200
+        assert response.json() == {
+            "id": self.question.id,
+            "question_text": "First question?",
+            "pub_date": "2025-01-01T12:00:00Z",
+        }
+
+    def test_get_nonexistent_question(self):
+        response = self.client.get(
+            f"/ninja-api/polls-async/questions/{self.question.id + 1}/",
+        )
+
+        assert response.status_code == 404
+
+        assert response.json() == {"detail": "Not Found"}
+
+
 @parameterized_class(
     ("base_api",),
     [
