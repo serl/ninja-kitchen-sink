@@ -270,9 +270,17 @@ class ListQuestionTestCase(TestCase):
             }
 
     def test_list_questions(self):
-        response = self.client.get(
-            f"/{self.base_api}/polls-v2/questions/",
-        )
+        with self.assertNumQueries(7):
+            # SELECT FROM "django_session"
+            # SELECT FROM "auth_user"
+            # SELECT FROM "polls_question"
+            # SELECT FROM "polls_tag"
+            # SELECT FROM "polls_choice"
+            # SELECT FROM "polls_tag"  -- N+1
+            # SELECT FROM "polls_choice"  -- N+1
+            response = self.client.get(
+                f"/{self.base_api}/polls-v2/questions/",
+            )
         assert response.status_code == 200
         assert len(response.json()) == 2
         assert response.json()[0] == {
