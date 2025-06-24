@@ -12,6 +12,7 @@ dependencies = [
   "django-ninja==1.4.3",
   "djangorestframework==3.16.0",
   "gunicorn==23.0.0",
+  "uvicorn[standard]==0.34.3",
 ]
 
 [dependency-groups]
