@@ -34,52 +34,50 @@ django-admin = "ninja_kitchen_sink:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-
 [tool.ruff]
 fix = true
 
 [tool.ruff.lint]
 select = [
-  "F", # pyflakes
-  "W", # pycodestyle
-  "E", # pycodestyle
-  "I", # isort
-  "UP", # pyupgrade
-  "B", # flake8-bugbear
-  "C4", # flake8-comprehensions
-  "T10", # flake8-debugger
-  "EXE", # flake8-executable
-  "ISC", # flake8-implicit-str-concat
-  "ICN", # flake8-import-conventions
-  "INP", # flake8-no-pep420
-  "PIE", # flake8-pie
-  "T20", # flake8-print
-  "INT", # flake8-gettext
-  "PGH", # pygrep-hooks
-  "PLC", # pylint conventions
-  "PLE", # pylint errors
-  "PLW", # pylint warnings
-  "FLY", # flynt
-  "RUF", # ruff-specific rules
+  "F",  # pyflakes
+  "W",  # pycodestyle
+  "E",  # pycodestyle
+  "I",  # isort
+  "UP",  # pyupgrade
+  "B",  # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "T10",  # flake8-debugger
+  "EXE",  # flake8-executable
+  "ISC",  # flake8-implicit-str-concat
+  "ICN",  # flake8-import-conventions
+  "INP",  # flake8-no-pep420
+  "PIE",  # flake8-pie
+  "T20",  # flake8-print
+  "INT",  # flake8-gettext
+  "PGH",  # pygrep-hooks
+  "PLC",  # pylint conventions
+  "PLE",  # pylint errors
+  "PLW",  # pylint warnings
+  "FLY",  # flynt
+  "RUF",  # ruff-specific rules
 ]
 
 ignore = [
-  "E501", # ignore line length (let ruff format handle it)
+  "E501",  # ignore line length (let ruff format handle it)
   "RUF012",
-  "ISC001", # Conflicting rule with ruff formatter, see https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  "ISC001",  # Conflicting rule with ruff formatter, see https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
 ]
 
 [tool.pytest.ini_options]
-addopts = '--ds=ninja_kitchen_sink.settings'
+addopts = "--ds=ninja_kitchen_sink.settings"
 FAIL_INVALID_TEMPLATE_VARS = true
 filterwarnings = [
-  'error', # Fail on warnings
+  "error",  # Fail on warnings
 
   # https://github.com/vitalik/django-ninja/issues/1245
-  'ignore:Support for class-based `config` is deprecated.*:pydantic.warnings.PydanticDeprecatedSince20',
-  'ignore:The `__fields__` attribute is deprecated, use `model_fields` instead.*:pydantic.warnings.PydanticDeprecatedSince20',
+  "ignore:Support for class-based `config` is deprecated.*:pydantic.warnings.PydanticDeprecatedSince20",
+  "ignore:The `__fields__` attribute is deprecated, use `model_fields` instead.*:pydantic.warnings.PydanticDeprecatedSince20",
 ]
-
 
 [tool.coverage.run]
 branch = true
