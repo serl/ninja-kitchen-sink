@@ -22,11 +22,13 @@ repos:
     hooks:
       - id: codespell
 
-  - repo: https://github.com/ComPWA/taplo-pre-commit
-    rev: v0.9.3
+  - repo: https://github.com/tombi-toml/tombi-pre-commit
+    rev: v1.10.0
     hooks:
-      - id: taplo-format
-      - id: taplo-lint
+      - id: tombi-format
+        args: [--offline]
+      - id: tombi-lint
+        args: [--offline]
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.7.13 # update in .github/workflows as well

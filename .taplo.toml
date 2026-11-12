@@ -1,7 +1,0 @@
-[formatting]
-array_auto_collapse = false
-align_comments = false
-
-exclude = [
-  "uv.lock",
-]
